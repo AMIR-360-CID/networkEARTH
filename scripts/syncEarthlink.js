@@ -71,12 +71,16 @@ function parseEarthlinkDate(text) {
 }
 
 async function scrapeActiveUsers(page) {
+  page.setDefaultNavigationTimeout(60000)
+  page.setDefaultTimeout(60000)
+
   console.log('فتح صفحة تسجيل الدخول...')
-  await page.goto(LOGIN_URL, { waitUntil: 'networkidle2' })
+  await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector(SEL.loginUser, { timeout: 30000 })
   await page.type(SEL.loginUser, EARTHLINK_USERNAME, { delay: 20 })
   await page.type(SEL.loginPass, EARTHLINK_PASSWORD, { delay: 20 })
   await Promise.all([
-    page.waitForNavigation({ waitUntil: 'networkidle2' }),
+    page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
     page.click(SEL.loginBtn),
   ])
 
@@ -86,17 +90,20 @@ async function scrapeActiveUsers(page) {
   }
 
   console.log('فتح صفحة Users Management وتفعيل فلتر Active...')
-  await page.goto(GRID_URL, { waitUntil: 'networkidle2' })
+  await page.goto(GRID_URL, { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector(SEL.statusDropdown, { timeout: 30000 })
 
   await Promise.all([
-    page.waitForNavigation({ waitUntil: 'networkidle2' }).catch(() => null),
+    page.waitForNavigation({ waitUntil: 'domcontentloaded' }).catch(() => null),
     page.select(SEL.statusDropdown, '1'), // 1 = Active
   ])
+  await page.waitForSelector(SEL.searchBtn, { timeout: 30000 })
 
   await Promise.all([
-    page.waitForNavigation({ waitUntil: 'networkidle2' }).catch(() => null),
+    page.waitForNavigation({ waitUntil: 'domcontentloaded' }).catch(() => null),
     page.click(SEL.searchBtn),
   ])
+  await page.waitForSelector('tr.userRow', { timeout: 30000 }).catch(() => null)
 
   console.log('تغيير Page Size إلى 200 لجلب كل النتائج بصفحة وحدة...')
   try {
@@ -111,7 +118,6 @@ async function scrapeActiveUsers(page) {
     const el = li200.asElement()
     if (el) {
       await el.click()
-      // تحديث الجدول عبر Ajax (UpdatePanel) - ننتظر هدوء الشبكة بدل تنقل كامل للصفحة
       await page.waitForNetworkIdle({ idleTime: 1000, timeout: 15000 }).catch(() => null)
     }
   } catch (e) {
@@ -199,7 +205,7 @@ async function syncToSupabase(activeUsers) {
       continue
     }
     added++
-    existingUsernames.add(u.username) // تحسّب لو تكرر نفس اليوزر بالنتائج
+    existingUsernames.add(u.username)
   }
 
   if (missingPlanNames.size > 0) {
