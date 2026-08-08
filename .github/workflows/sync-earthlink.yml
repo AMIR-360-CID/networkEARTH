@@ -22,7 +22,8 @@ jobs:
         run: npm install
 
       - name: Test connectivity to Earthlink
-        run: curl -v -m 20 https://admin.earthlink.iq/Login.aspx || echo "فشل الاتصال - رمز الخطأ: $?"
+        run: |
+          curl -v -m 20 https://admin.earthlink.iq/Login.aspx || echo "connectivity test failed"
 
       - name: Install Chromium for Puppeteer
         run: npx puppeteer browsers install chrome
