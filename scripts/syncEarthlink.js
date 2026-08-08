@@ -54,7 +54,6 @@ if (!VITE_SUPABASE_URL || !VITE_SUPABASE_ANON_KEY) {
 
 const supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)
 
-// "27/02/2026 04:13 PM" -> ISO أو null لو الصيغة غير متوقعة
 function parseEarthlinkDate(text) {
   if (!text) return null
   const m = text
@@ -95,7 +94,7 @@ async function scrapeActiveUsers(page) {
 
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded' }).catch(() => null),
-    page.select(SEL.statusDropdown, '1'), // 1 = Active
+    page.select(SEL.statusDropdown, '1'),
   ])
   await page.waitForSelector(SEL.searchBtn, { timeout: 30000 })
 
@@ -121,7 +120,7 @@ async function scrapeActiveUsers(page) {
       await page.waitForNetworkIdle({ idleTime: 1000, timeout: 15000 }).catch(() => null)
     }
   } catch (e) {
-    console.warn('تحذير: ما قدرنا نغيّر Page Size لـ 200، بنكمل بالحجم الافتراضي (قد يحتاج تصفح صفحات إضافية لاحقًا):', e.message)
+    console.warn('تحذير: ما قدرنا نغيّر Page Size لـ 200:', e.message)
   }
 
   console.log('قراءة بيانات المشتركين من الجدول...')
@@ -251,4 +250,11 @@ async function main() {
     await logResult('success', result, null)
   } catch (err) {
     console.error('فشلت عملية المزامنة:', err)
-    await logResult('error', null,
+    await logResult('error', null, String(err.message || err)).catch(() => null)
+    process.exitCode = 1
+  } finally {
+    await browser.close()
+  }
+}
+
+main()
