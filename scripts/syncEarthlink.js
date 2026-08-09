@@ -9,8 +9,11 @@
  * 4) يسجل نتيجة العملية بجدول earthlink_sync_log
  */
 
-import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer-extra'
+import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { createClient } from '@supabase/supabase-js'
+
+puppeteer.use(StealthPlugin())
 
 const {
   EARTHLINK_USERNAME,
@@ -238,9 +241,6 @@ async function main() {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     )
     await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8' })
-    await page.evaluateOnNewDocument(() => {
-      Object.defineProperty(navigator, 'webdriver', { get: () => undefined })
-    })
 
     const activeUsers = await scrapeActiveUsers(page)
     const result = await syncToSupabase(activeUsers)
