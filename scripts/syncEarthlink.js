@@ -7,11 +7,6 @@
  *    - يطابق اسم الباقة (Acc. Name) مع جدول plans عندنا
  *    - يضيفه كمشترك جديد برسوم = سعر بيع الباقة، ومدفوع = 0 (دَين)
  * 4) يسجل نتيجة العملية بجدول earthlink_sync_log
- *
- * التشغيل محلياً للاختبار:
- *   EARTHLINK_USERNAME=... EARTHLINK_PASSWORD=... \
- *   VITE_SUPABASE_URL=... VITE_SUPABASE_ANON_KEY=... \
- *   HEADLESS=false node scripts/syncEarthlink.js
  */
 
 import puppeteer from 'puppeteer'
@@ -229,12 +224,23 @@ async function logResult(status, result, errorMessage) {
 async function main() {
   const browser = await puppeteer.launch({
     headless: HEADLESS === 'false' ? false : 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-blink-features=AutomationControlled',
+    ],
   })
 
   try {
     const page = await browser.newPage()
     await page.setViewport({ width: 1366, height: 900 })
+    await page.setUserAgent(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    )
+    await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8' })
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => undefined })
+    })
 
     const activeUsers = await scrapeActiveUsers(page)
     const result = await syncToSupabase(activeUsers)
